@@ -10,7 +10,8 @@ const {
     ModalBuilder,
     TextInputBuilder,
     TextInputStyle,
-    StringSelectMenuBuilder
+    StringSelectMenuBuilder,
+    StringSelectMenuOptionBuilder
 } = require("discord.js");
 
 // ======================================================
@@ -25,11 +26,6 @@ const client = new Client({
         GatewayIntentBits.MessageContent
     ]
 });
-
-// ======================================================
-// ======================================================
-
-
 
 // ======================================================
 // CATEGORIAS
@@ -70,7 +66,7 @@ const CARGOS_VERIFICADO = [
 // CONTADOR
 // ======================================================
 
-let ticketCounter = 0;
+let ticketCounter = 1;
 
 // ======================================================
 // ANTI SPAM
@@ -99,9 +95,7 @@ function iniciarAutoClose(channel) {
             );
 
             setTimeout(async () => {
-
                 await channel.delete().catch(() => {});
-
             }, 3000);
 
         } catch {}
@@ -130,7 +124,7 @@ function staffPerms() {
 }
 
 // ======================================================
-// LOG
+// LOGS
 // ======================================================
 
 async function criarLog(guild, texto) {
@@ -153,7 +147,6 @@ client.on("messageCreate", async (message) => {
     if (
         message.channel.parentId === CATEGORIA_TICKETS
     ) {
-
         iniciarAutoClose(message.channel);
     }
 
@@ -167,11 +160,10 @@ client.on("messageCreate", async (message) => {
             .setColor("#c8a96b")
             .setTitle("📖 Central de Comandos")
             .setDescription(`
-\`!verify\` → painel principal
-\`!painel\` → enviar painel
-\`!fechar\` → fechar ticket
-\`!limpar\`
+\`!painel\` → envia painel
+\`!fechar\` → fecha ticket
 \`!status\`
+\`!limpar\`
             `);
 
         return message.channel.send({
@@ -228,9 +220,7 @@ ${client.guilds.cache.size}
         );
 
         setTimeout(async () => {
-
             await message.channel.delete().catch(() => {});
-
         }, 5000);
     }
 
@@ -239,11 +229,11 @@ ${client.guilds.cache.size}
     // ======================================================
 
     if (
-        message.content === "!verify" ||
-        message.content === "!painel"
+        message.content === "!painel" ||
+        message.content === "!verify"
     ) {
 
-        const painel = new ActionRowBuilder().addComponents(
+        const row = new ActionRowBuilder().addComponents(
 
             new ButtonBuilder()
                 .setCustomId("abrir_verificacao")
@@ -289,12 +279,11 @@ ${client.guilds.cache.size}
             `)
             .setFooter({
                 text: "CALICE • Atendimento Oficial"
-            })
-            .setTimestamp();
+            });
 
         return message.channel.send({
             embeds: [embed],
-            components: [painel]
+            components: [row]
         });
     }
 });
@@ -352,120 +341,17 @@ client.on("interactionCreate", async (interaction) => {
 
         const canal = await interaction.guild.channels.create({
 
-    name: `📁・${nomeHistorico}`,
+            name: `📁・${nomeHistorico}`,
 
-    type: ChannelType.GuildText,
-
-    parent: CATEGORIA_HISTORICOS,
-
-    permissionOverwrites: [
-
-        {
-            id: interaction.guild.id,
-
-            deny: [
-                PermissionsBitField.Flags.ViewChannel
-            ]
-        },
-
-        {
-            id: interaction.user.id,
-
-            allow: [
-                PermissionsBitField.Flags.ViewChannel,
-                PermissionsBitField.Flags.SendMessages
-            ]
-        },
-
-        ...staffPerms()
-
-    ]
-
-});
-
-
-// ======================================================
-// MENSAGEM AUTOMÁTICA
-// ======================================================
-
-await canal.send({
-
-    content:
-`<@&1484675449186418688> ${interaction.user}`,
-
-    embeds: [
-
-        new EmbedBuilder()
-
-        .setColor("#2f3136")
-
-        .setTitle("📁 Histórico Criado")
-
-        .setDescription(
-`📌 Um novo histórico foi criado.
-
-👤 Criado por:
-${interaction.user}
-
-🕒 Horário:
-<t:${Math.floor(Date.now()/1000)}:F>`
-        )
-    ]
-});
-
-
-// ======================================================
-
-return interaction.editReply({
-
-    content:
-`📁 Histórico criado: ${canal}`
-
-});
-
-}
-
-    // ======================================================
-    // VERIFICAÇÃO
-    // ======================================================
-
-    if (
-        interaction.isButton() &&
-        interaction.customId === "abrir_verificacao"
-    ) {
-
-        await interaction.deferReply({
-            ephemeral: true
-        });
-
-        const tempo = cooldownTickets.get(interaction.user.id);
-
-        if (tempo && Date.now() < tempo) {
-
-            return interaction.editReply({
-                content:
-                    "❌ Aguarde alguns segundos."
-            });
-        }
-
-        cooldownTickets.set(
-            interaction.user.id,
-            Date.now() + 15000
-        );
-
-        ticketCounter++;
-
-        const canal = await interaction.guild.channels.create({
-
-            name: `✅・ticket-${ticketCounter}`,
             type: ChannelType.GuildText,
-            topic: interaction.user.id,
-            parent: CATEGORIA_TICKETS,
+
+            parent: CATEGORIA_HISTORICOS,
 
             permissionOverwrites: [
 
                 {
                     id: interaction.guild.id,
+
                     deny: [
                         PermissionsBitField.Flags.ViewChannel
                     ]
@@ -473,6 +359,7 @@ return interaction.editReply({
 
                 {
                     id: interaction.user.id,
+
                     allow: [
                         PermissionsBitField.Flags.ViewChannel,
                         PermissionsBitField.Flags.SendMessages,
@@ -484,73 +371,49 @@ return interaction.editReply({
             ]
         });
 
-        iniciarAutoClose(canal);
-
-        const embed = new EmbedBuilder()
-            .setColor("#57F287")
-            .setTitle(`✅ Ticket #${ticketCounter}`)
-            .setDescription(`
-🛡️ Sistema de Verificação
-
-📌 Envie:
-🖼️ Print do perfil
-🎖️ Print dos cargos
-🆔 Seu ID
-
-⏰ Auto fechamento:
-30 minutos
-
-🔒 Ticket privado.
-            `);
-
-        const row = new ActionRowBuilder().addComponents(
-
-            new ButtonBuilder()
-                .setCustomId("verificar_usuario")
-                .setLabel("Verificar")
-                .setEmoji("✅")
-                .setStyle(ButtonStyle.Success),
-
-            new ButtonBuilder()
-                .setCustomId("recusar_usuario")
-                .setLabel("Recusar")
-                .setEmoji("❌")
-                .setStyle(ButtonStyle.Danger),
-
-            new ButtonBuilder()
-                .setCustomId("fechar_ticket")
-                .setLabel("Concluir")
-                .setEmoji("🔒")
-                .setStyle(ButtonStyle.Secondary)
-        );
-
         await canal.send({
 
-            content: `
+            content:
+`<@&${GESTAO}> ${interaction.user}`,
+
+            embeds: [
+
+                new EmbedBuilder()
+
+                .setColor("#2f3136")
+
+                .setTitle("📁 Histórico Criado")
+
+                .setDescription(`
+📌 Um novo histórico foi criado.
+
+👤 Criado por:
 ${interaction.user}
 
-<@&1484675449186418688>
-<@&1490778989248254045>
-<@&1495437507960115331>
-            `,
+🕒 Horário:
+<t:${Math.floor(Date.now()/1000)}:F>
 
-            embeds: [embed],
-            components: [row]
+🔒 Canal privado.
+                `)
+            ]
         });
 
         return interaction.editReply({
+
             content:
-                `✅ Ticket criado: ${canal}`
+`✅ Histórico criado: ${canal}`
+
         });
     }
 
     // ======================================================
-    // TICKET / DÚVIDAS
+    // VERIFICAÇÃO / TICKET / DÚVIDAS
     // ======================================================
 
     if (
         interaction.isButton() &&
         (
+            interaction.customId === "abrir_verificacao" ||
             interaction.customId === "abrir_ticket" ||
             interaction.customId === "abrir_duvidas"
         )
@@ -577,22 +440,34 @@ ${interaction.user}
 
         ticketCounter++;
 
-        const tipo =
-            interaction.customId === "abrir_ticket"
-                ? "🎫"
-                : "❓";
+        let emoji = "🎫";
+        let titulo = "Ticket";
+
+        if (interaction.customId === "abrir_verificacao") {
+            emoji = "✅";
+            titulo = "Sistema de Verificação";
+        }
+
+        if (interaction.customId === "abrir_duvidas") {
+            emoji = "❓";
+            titulo = "Dúvidas";
+        }
 
         const canal = await interaction.guild.channels.create({
 
-            name: `${tipo}・ticket-${ticketCounter}`,
+            name: `${emoji}・ticket-${ticketCounter}`,
+
             type: ChannelType.GuildText,
+
             topic: interaction.user.id,
+
             parent: CATEGORIA_TICKETS,
 
             permissionOverwrites: [
 
                 {
                     id: interaction.guild.id,
+
                     deny: [
                         PermissionsBitField.Flags.ViewChannel
                     ]
@@ -600,9 +475,11 @@ ${interaction.user}
 
                 {
                     id: interaction.user.id,
+
                     allow: [
                         PermissionsBitField.Flags.ViewChannel,
-                        PermissionsBitField.Flags.SendMessages
+                        PermissionsBitField.Flags.SendMessages,
+                        PermissionsBitField.Flags.ReadMessageHistory
                     ]
                 },
 
@@ -612,13 +489,49 @@ ${interaction.user}
 
         iniciarAutoClose(canal);
 
-        const botoes = new ActionRowBuilder().addComponents(
+        const embed = new EmbedBuilder()
+            .setColor("#57F287")
+            .setTitle(`${emoji} Ticket #${ticketCounter}`)
+            .setDescription(`
+📌 ${titulo}
 
-            new ButtonBuilder()
-                .setCustomId("assumir_ticket")
-                .setLabel("Assumir")
-                .setEmoji("🛡️")
-                .setStyle(ButtonStyle.Primary),
+⏰ Auto fechamento:
+30 minutos
+
+🔒 Canal privado.
+            `);
+
+        const botoes = [];
+
+        if (interaction.customId === "abrir_verificacao") {
+
+            botoes.push(
+
+                new ButtonBuilder()
+                    .setCustomId("verificar_usuario")
+                    .setLabel("Verificar")
+                    .setEmoji("✅")
+                    .setStyle(ButtonStyle.Success),
+
+                new ButtonBuilder()
+                    .setCustomId("recusar_usuario")
+                    .setLabel("Recusar")
+                    .setEmoji("❌")
+                    .setStyle(ButtonStyle.Danger)
+            );
+        } else {
+
+            botoes.push(
+
+                new ButtonBuilder()
+                    .setCustomId("assumir_ticket")
+                    .setLabel("Assumir")
+                    .setEmoji("🛡️")
+                    .setStyle(ButtonStyle.Primary)
+            );
+        }
+
+        botoes.push(
 
             new ButtonBuilder()
                 .setCustomId("fechar_ticket")
@@ -627,7 +540,10 @@ ${interaction.user}
                 .setStyle(ButtonStyle.Secondary)
         );
 
-        const painelStaff = new ActionRowBuilder().addComponents(
+        const row = new ActionRowBuilder()
+            .addComponents(botoes);
+
+        const menuStaff = new ActionRowBuilder().addComponents(
 
             new StringSelectMenuBuilder()
                 .setCustomId("painel_staff")
@@ -656,33 +572,28 @@ ${interaction.user}
                 ])
         );
 
-        const embed = new EmbedBuilder()
-            .setColor("#5865F2")
-            .setTitle(`${tipo} Ticket #${ticketCounter}`)
-            .setDescription(`
-📌 Atendimento iniciado.
+        const components = [row];
 
-⏰ Auto fechamento:
-30 minutos
-
-🔒 Canal privado.
-            `);
+        if (
+            interaction.customId !== "abrir_verificacao"
+        ) {
+            components.push(menuStaff);
+        }
 
         await canal.send({
 
-            content: `
-${interaction.user}
+            content:
+`${interaction.user}
 
-<@&${GESTAO}>
-            `,
+<@&${GESTAO}>`,
 
             embeds: [embed],
-            components: [botoes, painelStaff]
+            components
         });
 
         return interaction.editReply({
             content:
-                `${tipo} Ticket criado: ${canal}`
+                `✅ Ticket criado: ${canal}`
         });
     }
 
@@ -695,11 +606,11 @@ ${interaction.user}
         interaction.customId === "assumir_ticket"
     ) {
 
-        await interaction.deferReply();
+        await interaction.reply({
 
-        return interaction.editReply({
             content:
-                `🛡️ Ticket assumido por ${interaction.user}`
+`🛡️ Ticket assumido por ${interaction.user}`
+
         });
     }
 
@@ -721,22 +632,19 @@ ${interaction.user}
             );
 
             for (const cargo of CARGOS_VERIFICADO) {
-
                 await membro.roles.add(cargo);
             }
 
             return interaction.editReply({
                 content:
-                    `✅ ${membro.user.tag} foi verificado!`
+`✅ ${membro.user.tag} foi verificado!`
             });
 
-        } catch (err) {
-
-            console.log(err);
+        } catch {
 
             return interaction.editReply({
                 content:
-                    "❌ Erro ao verificar."
+"❌ Erro ao verificar."
             });
         }
     }
@@ -750,11 +658,11 @@ ${interaction.user}
         interaction.customId === "recusar_usuario"
     ) {
 
-        await interaction.deferReply();
+        await interaction.reply({
 
-        return interaction.editReply({
             content:
-                `❌ Verificação recusada por ${interaction.user}`
+`❌ Verificação recusada por ${interaction.user}`
+
         });
     }
 
@@ -767,19 +675,15 @@ ${interaction.user}
         interaction.customId === "fechar_ticket"
     ) {
 
-        await interaction.deferReply({
-            ephemeral: true
-        });
+        await interaction.reply({
 
-        await interaction.editReply({
             content:
-                "🔒 Ticket será fechado em 5 segundos..."
+"🔒 Ticket será fechado em 5 segundos..."
+
         });
 
         setTimeout(async () => {
-
             await interaction.channel.delete().catch(() => {});
-
         }, 5000);
     }
 
@@ -808,12 +712,12 @@ ${interaction.user}
 
             return interaction.editReply({
                 content:
-                    `🔔 <@${donoId}> foi notificado.`
+`🔔 <@${donoId}> foi notificado.`
             });
         }
 
         // ======================================================
-        // ADICIONAR MEMBRO
+        // ADICIONAR
         // ======================================================
 
         if (valor === "adicionar") {
@@ -824,28 +728,38 @@ ${interaction.user}
             const options = membros
                 .filter(m => !m.user.bot)
                 .first(25)
-                .map(membro => ({
-                    label: membro.user.username,
-                    value: membro.id
-                }));
+                .map(membro => (
+
+                    new StringSelectMenuOptionBuilder()
+
+                        .setLabel(membro.user.username)
+                        .setValue(membro.id)
+                        .setDescription(
+                            `Adicionar ${membro.user.username}`
+                        )
+                        .setEmoji("👤")
+                ));
 
             const menu = new ActionRowBuilder().addComponents(
 
                 new StringSelectMenuBuilder()
+
                     .setCustomId("selecionar_add_membro")
                     .setPlaceholder("Escolha quem adicionar")
                     .addOptions(options)
             );
 
             return interaction.editReply({
+
                 content:
-                    "➕ Escolha um membro:",
+"➕ Escolha um membro:",
+
                 components: [menu]
             });
         }
 
         // ======================================================
-        // REMOVER MEMBRO
+        // REMOVER
         // ======================================================
 
         if (valor === "remover") {
@@ -876,32 +790,34 @@ ${interaction.user}
                     !membro.user.bot
                 ) {
 
-                    membros.push({
-                        label: membro.user.username,
-                        value: membro.id
-                    });
+                    membros.push(
+
+                        new StringSelectMenuOptionBuilder()
+
+                            .setLabel(membro.user.username)
+                            .setValue(membro.id)
+                            .setDescription(
+                                `Remover ${membro.user.username}`
+                            )
+                            .setEmoji("👤")
+                    );
                 }
-            }
-
-            if (membros.length === 0) {
-
-                return interaction.editReply({
-                    content:
-                        "❌ Nenhum membro encontrado."
-                });
             }
 
             const menu = new ActionRowBuilder().addComponents(
 
                 new StringSelectMenuBuilder()
+
                     .setCustomId("selecionar_remove_membro")
                     .setPlaceholder("Escolha quem remover")
                     .addOptions(membros.slice(0, 25))
             );
 
             return interaction.editReply({
+
                 content:
-                    "➖ Escolha um membro:",
+"➖ Escolha um membro:",
+
                 components: [menu]
             });
         }
@@ -916,7 +832,7 @@ ${interaction.user}
                 await interaction.guild.channels.create({
 
                     name:
-                        `📞・call-${interaction.user.username}`,
+`📞・call-${interaction.user.username}`,
 
                     type: ChannelType.GuildVoice,
 
@@ -926,6 +842,7 @@ ${interaction.user}
 
                         {
                             id: interaction.guild.id,
+
                             deny: [
                                 PermissionsBitField.Flags.ViewChannel
                             ]
@@ -933,6 +850,7 @@ ${interaction.user}
 
                         {
                             id: interaction.channel.topic,
+
                             allow: [
                                 PermissionsBitField.Flags.ViewChannel,
                                 PermissionsBitField.Flags.Connect,
@@ -946,13 +864,13 @@ ${interaction.user}
 
             return interaction.editReply({
                 content:
-                    `📞 Call criada: ${call}`
+`📞 Call criada: ${call}`
             });
         }
     }
 
     // ======================================================
-    // SELECT ADD MEMBRO
+    // ADD MEMBRO
     // ======================================================
 
     if (
@@ -976,12 +894,12 @@ ${interaction.user}
 
         return interaction.editReply({
             content:
-                "✅ Membro adicionado ao ticket."
+"✅ Membro adicionado."
         });
     }
 
     // ======================================================
-    // SELECT REMOVE MEMBRO
+    // REMOVE MEMBRO
     // ======================================================
 
     if (
@@ -1001,7 +919,7 @@ ${interaction.user}
 
         return interaction.editReply({
             content:
-                "❌ Membro removido do ticket."
+"❌ Membro removido."
         });
     }
 });
@@ -1022,7 +940,7 @@ client.once("ready", () => {
     );
 });
 
-/// ======================================================
+// ======================================================
 // LOGIN
 // ======================================================
 
