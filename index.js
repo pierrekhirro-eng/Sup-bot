@@ -986,4 +986,4 @@ client.once("ready", () => {
 
 const TOKEN = process.env.TOKEN;
 
-client.login('MTUwODY1MzYxNDYzMjAxMzkxNg.GiiWli.eS1nct5l1iQqXiPv-9Iu8fzR6TMyC_gjC8WAPY');
+client.login(TOKEN);
