@@ -352,36 +352,76 @@ client.on("interactionCreate", async (interaction) => {
 
         const canal = await interaction.guild.channels.create({
 
-            name: `📂・${nomeHistorico}`,
-            type: ChannelType.GuildText,
-            parent: CATEGORIA_HISTORICOS,
+    name: `📁・${nomeHistorico}`,
 
-            permissionOverwrites: [
+    type: ChannelType.GuildText,
 
-                {
-                    id: interaction.guild.id,
-                    deny: [
-                        PermissionsBitField.Flags.ViewChannel
-                    ]
-                },
+    parent: CATEGORIA_HISTORICOS,
 
-                {
-                    id: interaction.user.id,
-                    allow: [
-                        PermissionsBitField.Flags.ViewChannel,
-                        PermissionsBitField.Flags.SendMessages
-                    ]
-                },
+    permissionOverwrites: [
 
-                ...staffPerms()
+        {
+            id: interaction.guild.id,
+
+            deny: [
+                PermissionsBitField.Flags.ViewChannel
             ]
-        });
+        },
 
-        return interaction.editReply({
-            content:
-                `📂 Histórico criado: ${canal}`
-        });
-    }
+        {
+            id: interaction.user.id,
+
+            allow: [
+                PermissionsBitField.Flags.ViewChannel,
+                PermissionsBitField.Flags.SendMessages
+            ]
+        },
+
+        ...staffPerms()
+
+    ]
+
+});
+
+
+// ======================================================
+// MENSAGEM AUTOMÁTICA
+// ======================================================
+
+await canal.send({
+
+    content:
+`<@&1484675449186418688> ${interaction.user}`,
+
+    embeds: [
+
+        new EmbedBuilder()
+
+        .setColor("#2f3136")
+
+        .setTitle("📁 Histórico Criado")
+
+        .setDescription(
+`📌 Um novo histórico foi criado.
+
+👤 Criado por:
+${interaction.user}
+
+🕒 Horário:
+<t:${Math.floor(Date.now()/1000)}:F>`
+        )
+    ]
+});
+
+
+// ======================================================
+
+return interaction.editReply({
+
+    content:
+`📁 Histórico criado: ${canal}`
+
+});
 
     // ======================================================
     // VERIFICAÇÃO
